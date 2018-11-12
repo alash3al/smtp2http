@@ -27,4 +27,4 @@ Contribution
 
 Author
 =======
-[uFlare](https://www.uflare.io)
+[uFlare](https://www.uflare.io) Company.
