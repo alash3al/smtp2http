@@ -12,6 +12,14 @@ Installation
 - binaries: go to [releases](https://github.com/uflare/smtp2http/releases) page and choose your distribution.
 - go: `go get github.com/uflare/smtp2http`
 
+Usage
+=====
+`smtp2http --listen=:25 --webhook=http://localhost:8080/api/smtp-hook --strict=true`
+
+Help
+====
+`smtp2http --help`
+
 Contribution
 =============
 > Fork > Patch > Create Pull Request
