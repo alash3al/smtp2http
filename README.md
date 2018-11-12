@@ -11,7 +11,7 @@ Installation
 =============
 - binaries: go to [releases](https://github.com/uflare/smtp2http/releases) page and choose your distribution.
 - go: `go get github.com/uflare/smtp2http`
-- docker: `docker run --network=host alash3al/smtp2http --listen=:25 --webhook=http://localhost:8080/api/smtp-hook --strict=true`
+- docker: `docker run --network=host uflare/smtp2http --listen=:25 --webhook=http://localhost:8080/api/smtp-hook --strict=true`
 
 Usage
 =====
