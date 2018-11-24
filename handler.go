@@ -18,7 +18,7 @@ func handler(req *smtpsrv.Request) error {
 		if req.SPFResult != spf.Pass {
 			return errors.New("Your host isn't configured correctly or you are a spammer -_-")
 		} else if !req.Mailable {
-			return errors.New("Your mail isn't valid becuase it cannot receive emails -_-")
+			return errors.New("Your mail isn't valid because it cannot receive emails -_-")
 		}
 	}
 
