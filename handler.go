@@ -32,7 +32,7 @@ func handler(req *smtpsrv.Request) error {
 	// set the url-encoded-data
 	rq.SetFormData(map[string]string{
 		"id":                  msg.Header.Get("Message-ID"),
-		"in-reply-to":         msg.ReplyTo,
+		"in-reply-to":                  msg.Header.Get("In-Reply-To"),
 		"subject":             msg.Subject,
 		"body[text]":          string(msg.TextBody),
 		"body[html]":          string(msg.HTMLBody),
@@ -40,7 +40,6 @@ func handler(req *smtpsrv.Request) error {
 		"addresses[to]":       strings.Join(extractEmails(msg.To), ","),
 		"addresses[cc]":       strings.Join(extractEmails(msg.Cc), ","),
 		"addresses[bcc]":      strings.Join(extractEmails(msg.Bcc), ","),
-		"addresses[reply-to]": strings.Join(extractEmails(msg.ReplyTo), ","),
 	})
 
 	// set the files "attachments"
