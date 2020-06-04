@@ -8,8 +8,8 @@ import (
 	"github.com/DusanKasan/parsemail"
 
 	"github.com/alash3al/go-smtpsrv"
-	"gopkg.in/resty.v1"
 	"github.com/zaccone/spf"
+	"gopkg.in/resty.v1"
 )
 
 func handler(req *smtpsrv.Request) error {
@@ -31,15 +31,16 @@ func handler(req *smtpsrv.Request) error {
 
 	// set the url-encoded-data
 	rq.SetFormData(map[string]string{
-		"id":              msg.Header.Get("Message-ID"),
-		"in-reply-to":     msg.ReplyTo,
-		"subject":         msg.Subject,
-		"body[text]":      string(msg.TextBody),
-		"body[html]":      string(msg.HTMLBody),
-		"addresses[from]": req.From,
-		"addresses[to]":   strings.Join(extractEmails(msg.To), ","),
-		"addresses[cc]":   strings.Join(extractEmails(msg.Cc), ","),
-		"addresses[bcc]":  strings.Join(extractEmails(msg.Bcc), ","),
+		"id":                  msg.Header.Get("Message-ID"),
+		"in-reply-to":         msg.ReplyTo,
+		"subject":             msg.Subject,
+		"body[text]":          string(msg.TextBody),
+		"body[html]":          string(msg.HTMLBody),
+		"addresses[from]":     req.From,
+		"addresses[to]":       strings.Join(extractEmails(msg.To), ","),
+		"addresses[cc]":       strings.Join(extractEmails(msg.Cc), ","),
+		"addresses[bcc]":      strings.Join(extractEmails(msg.Bcc), ","),
+		"addresses[reply-to]": strings.Join(extractEmails(msg.ReplyTo), ","),
 	})
 
 	// set the files "attachments"
