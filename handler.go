@@ -8,7 +8,7 @@ import (
 	"github.com/DusanKasan/parsemail"
 
 	"github.com/alash3al/go-smtpsrv"
-	"github.com/go-resty/resty"
+	"gopkg.in/resty.v1"
 	"github.com/zaccone/spf"
 )
 
