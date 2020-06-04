@@ -31,15 +31,15 @@ func handler(req *smtpsrv.Request) error {
 
 	// set the url-encoded-data
 	rq.SetFormData(map[string]string{
-		"id":                  msg.Header.Get("Message-ID"),
-		"in-reply-to":                  msg.Header.Get("In-Reply-To"),
-		"subject":             msg.Subject,
-		"body[text]":          string(msg.TextBody),
-		"body[html]":          string(msg.HTMLBody),
-		"addresses[from]":     req.From,
-		"addresses[to]":       strings.Join(extractEmails(msg.To), ","),
-		"addresses[cc]":       strings.Join(extractEmails(msg.Cc), ","),
-		"addresses[bcc]":      strings.Join(extractEmails(msg.Bcc), ","),
+		"id":              msg.Header.Get("Message-ID"),
+		"in-reply-to":     msg.Header.Get("In-Reply-To"),
+		"subject":         msg.Subject,
+		"body[text]":      string(msg.TextBody),
+		"body[html]":      string(msg.HTMLBody),
+		"addresses[from]": req.From,
+		"addresses[to]":   strings.Join(extractEmails(msg.To), ","),
+		"addresses[cc]":   strings.Join(extractEmails(msg.Cc), ","),
+		"addresses[bcc]":  strings.Join(extractEmails(msg.Bcc), ","),
 	})
 
 	// set the files "attachments"
@@ -51,9 +51,9 @@ func handler(req *smtpsrv.Request) error {
 	// submit the form
 	resp, err := rq.Post(*flagWebhook)
 	if err != nil {
-		return errors.New("Cannot accept your message due to internal error, please report that to our engineers, '" + (err.Error()) + "'")
+		return errors.New("Cannot accept your message due to internal error, please report that to our engineers.")
 	} else if resp.StatusCode() != 200 {
-		return errors.New("BACKEND: " + resp.Status())
+		return errors.New("There was an error.")
 	}
 
 	return nil
