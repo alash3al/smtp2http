@@ -32,6 +32,7 @@ func handler(req *smtpsrv.Request) error {
 	// set the url-encoded-data
 	rq.SetFormData(map[string]string{
 		"id":              msg.Header.Get("Message-ID"),
+		"in-reply-to":     msg.ReplyTo,
 		"subject":         msg.Subject,
 		"body[text]":      string(msg.TextBody),
 		"body[html]":      string(msg.HTMLBody),
