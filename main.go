@@ -21,10 +21,12 @@ func main() {
 				return errors.New("Cannot read your message: " + err.Error())
 			}
 
-			rq := resty.New().R()
+			_, spfResultStr, _ := c.SPF()
+
+			req := resty.New().R()
 
 			// set the url-encoded-data
-			rq.SetFormData(map[string]string{
+			req.SetFormData(map[string]string{
 				"id":                     msg.MessageID,
 				"subject":                msg.Subject,
 				"body[text]":             string(msg.TextBody),
@@ -34,16 +36,17 @@ func main() {
 				"addresses[in-reply-to]": strings.Join(msg.InReplyTo, ","),
 				"addresses[cc]":          strings.Join(extractEmails(msg.Cc), ","),
 				"addresses[bcc]":         strings.Join(extractEmails(msg.Bcc), ","),
+				"spf_result":             strings.ToLower(spfResultStr),
 			})
 
 			// set the files "attachments"
 			for i, file := range msg.Attachments {
 				iStr := strconv.Itoa(i)
-				rq.SetFileReader("file["+iStr+"]", file.Filename, (file.Data))
+				req.SetFileReader("file["+iStr+"]", file.Filename, (file.Data))
 			}
 
 			// submit the form
-			resp, err := rq.Post(*flagWebhook)
+			resp, err := req.Post(*flagWebhook)
 			if err != nil {
 				return errors.New("E1: Cannot accept your message due to internal error, please report that to our engineers")
 			} else if resp.StatusCode() != 200 {
