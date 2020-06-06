@@ -2,13 +2,13 @@ github.com/DusanKasan/parsemail v1.2.0 h1:CrzTL1nuPLxB41aO4zE/Tzc9GVD8jjifUftlbT
 github.com/DusanKasan/parsemail v1.2.0/go.mod h1:B9lfMbpVe4DMqPImAOCGti7KEwasnRTrKKn66iQefVs=
 github.com/alash3al/go-smtpsrv v0.0.0-20200116110136-2030d5edd9b0 h1:iJ8wDpLboXdugENG7QK1LJDJbjMrP0y6hYkr5CpFgtY=
 github.com/alash3al/go-smtpsrv v0.0.0-20200116110136-2030d5edd9b0/go.mod h1:Y7vMqQBNXNb03qvKA9uy6vSAKBJu4CL3DD3fee06wDs=
-github.com/go-resty/resty v1.12.0 h1:L1P5qymrXL5H/doXe2pKUr1wxovAI5ilm2LdVLbwThc=
 github.com/go-resty/resty/v2 v2.3.0 h1:JOOeAvjSlapTT92p8xiS19Zxev1neGikoHsXJeOq8So=
 github.com/go-resty/resty/v2 v2.3.0/go.mod h1:UpN9CgLZNsv4e9XG50UU8xdI0F43UQ4HmxLBDwaroHU=
 github.com/miekg/dns v1.0.14 h1:9jZdLNd/P4+SfEJ0TNyxYpsK8N4GtfylBLqtbYN1sbA=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/tdewolff/parse v2.3.3+incompatible h1:q6OSjvHtvBucLb34z24OH1xl5wGdw1mI9Vd38Qj9evs=
 github.com/tdewolff/parse v2.3.3+incompatible/go.mod h1:8oBwCsVmUkgHO8M5iCzSIDtpzXOT0WXX9cWhz+bIzJQ=
+github.com/tdewolff/test v0.0.0-20171106182207-265427085153 h1:B1Z2txQ2QI9nsWELeEvGBAdNhMylGMSCCypjsLJh/Mw=
 github.com/tdewolff/test v0.0.0-20171106182207-265427085153/go.mod h1:DiQUlutnqlEvdvhSn2LPGy4TFwRauAaYDsL+683RNX4=
 github.com/zaccone/spf v0.0.0-20170817004109-76747b8658d9 h1:NugUf62Z6Yzn//u/MT+cuaFX1AFzfuIR9QVywUQX18E=
 github.com/zaccone/spf v0.0.0-20170817004109-76747b8658d9/go.mod h1:AL91TJsHKIaWR16S1IaxTSZfBRMr3/dOdiN1OZ1m9RM=
@@ -20,6 +20,7 @@ golang.org/x/net v0.0.0-20181017193950-04a2e542c03f h1:4pRM7zYwpBjCnfA1jRmhItLxY
 golang.org/x/net v0.0.0-20181017193950-04a2e542c03f/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20200513185701-a91f0712d120 h1:EZ3cVSzKOlJxAd8e8YAJ7no8nNypTxexh/YE/xW3ZEY=
 golang.org/x/net v0.0.0-20200513185701-a91f0712d120/go.mod h1:qpuaurCH72eLCgpAm/N6yyVIVM9cpaDIP3A8BGJEC5A=
+golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f h1:wMNYb4v58l5UBM7MYRLPG6ZhfOqbKu7X5eyFl8ZhKvA=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20181022134430-8a28ead16f52 h1:iuRaATs1WHBt1WKav1CczVukq8i0T8geqpAMCUAnT+o=
 golang.org/x/sys v0.0.0-20181022134430-8a28ead16f52/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
