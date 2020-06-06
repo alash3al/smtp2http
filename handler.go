@@ -8,7 +8,7 @@ import (
 	"github.com/DusanKasan/parsemail"
 
 	"github.com/alash3al/go-smtpsrv"
-	"github.com/go-resty/resty"
+	"github.com/go-resty/resty/v2"
 	"github.com/zaccone/spf"
 )
 
@@ -22,12 +22,12 @@ func handler(req *smtpsrv.Request) error {
 		}
 	}
 
-	msg, err := parsemail.Parse(req.Message)
+	msg, err := parsemail.Parse(req.Message.Body)
 	if err != nil {
-		return errors.New("Cannot read your message, it may be because of it exceeded the limits")
+		return errors.New("Cannot read your message: " + err.Error())
 	}
 
-	rq := resty.R()
+	rq := resty.New().R()
 
 	// set the url-encoded-data
 	rq.SetFormData(map[string]string{
