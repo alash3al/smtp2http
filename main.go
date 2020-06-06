@@ -25,19 +25,30 @@ func main() {
 
 			req := resty.New().R()
 
-			// set the url-encoded-data
-			req.SetFormData(map[string]string{
+			formData := map[string]string{
 				"id":                     msg.MessageID,
+				"date":                   msg.Date.String(),
 				"subject":                msg.Subject,
 				"body[text]":             string(msg.TextBody),
 				"body[html]":             string(msg.HTMLBody),
 				"addresses[from]":        c.From().Address,
 				"addresses[to]":          strings.Join(extractEmails(msg.To), ","),
+				"addresses[reply-to]":    strings.Join(extractEmails(msg.ReplyTo), ","),
+				"addresses[resent-to]":   strings.Join(extractEmails(msg.ResentTo), ","),
+				"addresses[resent-cc]":   strings.Join(extractEmails(msg.ResentCc), ","),
+				"addresses[resent-bcc]":  strings.Join(extractEmails(msg.ResentBcc), ","),
+				"addresses[resent-from]": strings.Join(extractEmails(msg.ResentFrom), ","),
 				"addresses[in-reply-to]": strings.Join(msg.InReplyTo, ","),
 				"addresses[cc]":          strings.Join(extractEmails(msg.Cc), ","),
 				"addresses[bcc]":         strings.Join(extractEmails(msg.Bcc), ","),
+				"resent-date":            msg.ResentDate.String(),
+				"resent-id":              msg.ResentMessageID,
+				"references":             strings.Join(msg.References, "m"),
 				"spf_result":             strings.ToLower(spfResult.String()),
-			})
+			}
+
+			// set the url-encoded-data
+			req.SetFormData(formData)
 
 			// set the files "attachments"
 			for i, file := range msg.Attachments {
