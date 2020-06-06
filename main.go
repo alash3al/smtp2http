@@ -1,24 +1,58 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
-	"github.com/alash3al/go-smtpsrv"
+	"github.com/alash3al/go-smtpsrv/v3"
+	"github.com/go-resty/resty/v2"
 )
 
 func main() {
-	srv := &smtpsrv.Server{
-		Addr:        *flagListenAddr,
-		MaxBodySize: *flagMaxMessageSize,
-		Handler:     handler,
-		Name:        *flagServerName,
+	cfg := smtpsrv.ServerConfig{
+		ListenAddr:      *flagListenAddr,
+		MaxMessageBytes: int(*flagMaxMessageSize),
+		BannerDomain:    *flagServerName,
+		Handler: smtpsrv.HandlerFunc(func(c *smtpsrv.Context) error {
+			msg, err := c.Parse()
+			if err != nil {
+				return errors.New("Cannot read your message: " + err.Error())
+			}
+
+			rq := resty.New().R()
+
+			// set the url-encoded-data
+			rq.SetFormData(map[string]string{
+				"id":                     msg.MessageID,
+				"subject":                msg.Subject,
+				"body[text]":             string(msg.TextBody),
+				"body[html]":             string(msg.HTMLBody),
+				"addresses[from]":        c.From().Address,
+				"addresses[to]":          strings.Join(extractEmails(msg.To), ","),
+				"addresses[in-reply-to]": strings.Join(msg.InReplyTo, ","),
+				"addresses[cc]":          strings.Join(extractEmails(msg.Cc), ","),
+				"addresses[bcc]":         strings.Join(extractEmails(msg.Bcc), ","),
+			})
+
+			// set the files "attachments"
+			for i, file := range msg.Attachments {
+				iStr := strconv.Itoa(i)
+				rq.SetFileReader("file["+iStr+"]", file.Filename, (file.Data))
+			}
+
+			// submit the form
+			resp, err := rq.Post(*flagWebhook)
+			if err != nil {
+				return errors.New("E1: Cannot accept your message due to internal error, please report that to our engineers")
+			} else if resp.StatusCode() != 200 {
+				return errors.New("E2: Cannot accept your message due to internal error, please report that to our engineers")
+			}
+
+			return nil
+		}),
 	}
 
-	fmt.Println("start the smtp server on address: ", *flagListenAddr)
-	fmt.Println("specified maximum body size: ", *flagMaxMessageSize, " bytes")
-	fmt.Println("specified server name: ", *flagServerName)
-	fmt.Println("specified webhook: ", *flagWebhook)
-	fmt.Println("validating the incoming FROM header: ", *flagStrictValidation)
-
-	fmt.Println(srv.ListenAndServe())
+	fmt.Println(smtpsrv.ListenAndServe(&cfg))
 }
