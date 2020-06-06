@@ -21,7 +21,7 @@ func main() {
 				return errors.New("Cannot read your message: " + err.Error())
 			}
 
-			_, spfResultStr, _ := c.SPF()
+			spfResult, _, _ := c.SPF()
 
 			req := resty.New().R()
 
@@ -36,7 +36,7 @@ func main() {
 				"addresses[in-reply-to]": strings.Join(msg.InReplyTo, ","),
 				"addresses[cc]":          strings.Join(extractEmails(msg.Cc), ","),
 				"addresses[bcc]":         strings.Join(extractEmails(msg.Bcc), ","),
-				"spf_result":             strings.ToLower(spfResultStr),
+				"spf_result":             strings.ToLower(spfResult.String()),
 			})
 
 			// set the files "attachments"
