@@ -1,10 +1,11 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
+	"io/ioutil"
+	"log"
 
 	"github.com/alash3al/go-smtpsrv/v3"
 	"github.com/go-resty/resty/v2"
@@ -23,44 +24,60 @@ func main() {
 
 			spfResult, _, _ := c.SPF()
 
-			req := resty.New().R()
-
-			formData := map[string]string{
-				"id":                     msg.MessageID,
-				"date":                   msg.Date.String(),
-				"subject":                msg.Subject,
-				"body[text]":             string(msg.TextBody),
-				"body[html]":             string(msg.HTMLBody),
-				"addresses[from]":        c.From().Address,
-				"addresses[to]":          strings.Join(extractEmails(msg.To), ","),
-				"addresses[reply-to]":    strings.Join(extractEmails(msg.ReplyTo), ","),
-				"addresses[resent-to]":   strings.Join(extractEmails(msg.ResentTo), ","),
-				"addresses[resent-cc]":   strings.Join(extractEmails(msg.ResentCc), ","),
-				"addresses[resent-bcc]":  strings.Join(extractEmails(msg.ResentBcc), ","),
-				"addresses[resent-from]": strings.Join(extractEmails(msg.ResentFrom), ","),
-				"addresses[in-reply-to]": strings.Join(msg.InReplyTo, ","),
-				"addresses[cc]":          strings.Join(extractEmails(msg.Cc), ","),
-				"addresses[bcc]":         strings.Join(extractEmails(msg.Bcc), ","),
-				"resent-date":            msg.ResentDate.String(),
-				"resent-id":              msg.ResentMessageID,
-				"references":             strings.Join(msg.References, "m"),
-				"spf_result":             strings.ToLower(spfResult.String()),
+			jsonData := EmailMessage{
+				ID:            msg.MessageID,
+				Date:          msg.Date.String(),
+				References:    msg.References,
+				SPFResult:     spfResult.String(),
+				ResentDate:    msg.ResentDate.String(),
+				ResentID:      msg.ResentMessageID,
+				Subject:       msg.Subject,
+				Attachments:   []*EmailAttachment{},
+				EmbeddedFiles: []*EmailEmbeddedFile{},
 			}
 
-			// set the url-encoded-data
-			req.SetFormData(formData)
+			jsonData.Body.HTML = string(msg.HTMLBody)
+			jsonData.Body.Text = string(msg.TextBody)
 
-			// set the files "attachments"
-			for i, file := range msg.Attachments {
-				iStr := strconv.Itoa(i)
-				req.SetFileReader("file["+iStr+"]", file.Filename, (file.Data))
+			jsonData.Addresses.From = transformStdAddressToEmailAddress(msg.From)[0]
+			jsonData.Addresses.To = transformStdAddressToEmailAddress(msg.To)
+			jsonData.Addresses.Cc = transformStdAddressToEmailAddress(msg.Cc)
+			jsonData.Addresses.Bcc = transformStdAddressToEmailAddress(msg.Bcc)
+			jsonData.Addresses.ReplyTo = transformStdAddressToEmailAddress(msg.ReplyTo)
+			jsonData.Addresses.InReplyTo = msg.InReplyTo
+
+			if resentFrom := transformStdAddressToEmailAddress(msg.ResentFrom); len(resentFrom) > 0 {
+				jsonData.Addresses.ResentFrom = resentFrom[0]
 			}
 
-			// submit the form
-			resp, err := req.Post(*flagWebhook)
+			jsonData.Addresses.ResentTo = transformStdAddressToEmailAddress(msg.ResentTo)
+			jsonData.Addresses.ResentCc = transformStdAddressToEmailAddress(msg.ResentCc)
+			jsonData.Addresses.ResentBcc = transformStdAddressToEmailAddress(msg.ResentBcc)
+
+			for _, a := range msg.Attachments {
+				data, _ := ioutil.ReadAll(a.Data)
+				jsonData.Attachments = append(jsonData.Attachments, &EmailAttachment{
+					Filename:    a.Filename,
+					ContentType: a.ContentType,
+					Data:        base64.StdEncoding.EncodeToString(data),
+				})
+			}
+
+			for _, a := range msg.EmbeddedFiles {
+				data, _ := ioutil.ReadAll(a.Data)
+				jsonData.EmbeddedFiles = append(jsonData.EmbeddedFiles, &EmailEmbeddedFile{
+					CID:         a.CID,
+					ContentType: a.ContentType,
+					Data:        base64.StdEncoding.EncodeToString(data),
+				})
+			}
+
+			resp, err := resty.New().R().SetHeader("Content-Type", "application/json").SetBody(jsonData).Post(*flagWebhook)
 			if err != nil {
+				log.Println(err)
 				return errors.New("E1: Cannot accept your message due to internal error, please report that to our engineers")
 			} else if resp.StatusCode() != 200 {
+				log.Println(resp.Status())
 				return errors.New("E2: Cannot accept your message due to internal error, please report that to our engineers")
 			}
 
