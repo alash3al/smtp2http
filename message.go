@@ -39,7 +39,7 @@ type EmailMessage struct {
 
 	Addresses struct {
 		From      *EmailAddress   `json:"from"`
-		To        []*EmailAddress `json:"to"`
+		To        *EmailAddress   `json:"to"`
 		ReplyTo   []*EmailAddress `json:"reply_to,omitempty"`
 		Cc        []*EmailAddress `json:"cc,omitempty"`
 		Bcc       []*EmailAddress `json:"bcc,omitempty"`

@@ -42,11 +42,9 @@ func main() {
 			jsonData.Body.HTML = string(msg.HTMLBody)
 			jsonData.Body.Text = string(msg.TextBody)
 
-			if from := transformStdAddressToEmailAddress(msg.From); len(from) > 0 {
-				jsonData.Addresses.From = from[0]
-			}
+			jsonData.Addresses.From = transformStdAddressToEmailAddress([]*mail.Address{c.From()})[0]
+			jsonData.Addresses.To = transformStdAddressToEmailAddress([]*mail.Address{c.To()})[0]
 
-			jsonData.Addresses.To = transformStdAddressToEmailAddress([]*mail.Address{c.To()})
 			jsonData.Addresses.Cc = transformStdAddressToEmailAddress(msg.Cc)
 			jsonData.Addresses.Bcc = transformStdAddressToEmailAddress(msg.Bcc)
 			jsonData.Addresses.ReplyTo = transformStdAddressToEmailAddress(msg.ReplyTo)
