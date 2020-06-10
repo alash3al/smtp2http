@@ -15,7 +15,8 @@ import (
 
 func main() {
 	cfg := smtpsrv.ServerConfig{
-		ReadTimeout:     60 * time.Second,
+		ReadTimeout:     time.Duration(*flagReadTimeout) * time.Second,
+		WriteTimeout:    time.Duration(*flagWriteTimeout) * time.Second,
 		ListenAddr:      *flagListenAddr,
 		MaxMessageBytes: int(*flagMaxMessageSize),
 		BannerDomain:    *flagServerName,
