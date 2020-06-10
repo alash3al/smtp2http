@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/mail"
+	"time"
 
 	"github.com/alash3al/go-smtpsrv/v3"
 	"github.com/go-resty/resty/v2"
@@ -13,6 +15,7 @@ import (
 
 func main() {
 	cfg := smtpsrv.ServerConfig{
+		ReadTimeout:     60 * time.Second,
 		ListenAddr:      *flagListenAddr,
 		MaxMessageBytes: int(*flagMaxMessageSize),
 		BannerDomain:    *flagServerName,
@@ -39,8 +42,11 @@ func main() {
 			jsonData.Body.HTML = string(msg.HTMLBody)
 			jsonData.Body.Text = string(msg.TextBody)
 
-			jsonData.Addresses.From = transformStdAddressToEmailAddress(msg.From)[0]
-			jsonData.Addresses.To = transformStdAddressToEmailAddress(msg.To)
+			if from := transformStdAddressToEmailAddress(msg.From); len(from) > 0 {
+				jsonData.Addresses.From = from[0]
+			}
+
+			jsonData.Addresses.To = transformStdAddressToEmailAddress([]*mail.Address{c.To()})
 			jsonData.Addresses.Cc = transformStdAddressToEmailAddress(msg.Cc)
 			jsonData.Addresses.Bcc = transformStdAddressToEmailAddress(msg.Bcc)
 			jsonData.Addresses.ReplyTo = transformStdAddressToEmailAddress(msg.ReplyTo)
