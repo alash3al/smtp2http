@@ -9,4 +9,6 @@ WORKDIR /root/
 COPY --from=builder /go/src/build/smtp2http .
 ENV WEBHOOK=http://localhost:8080/api/smtp-hook
 ENV LISTEN_PORT=25
-CMD ./smtp2http --listen=:${LISTEN_PORT} --webhook=${WEBHOOK}
+ENV USER=admin
+ENV PASS=pass
+CMD ./smtp2http --listen=:${LISTEN_PORT} --webhook=${WEBHOOK} --user=${USER} --pass=${PASS}
