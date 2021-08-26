@@ -11,4 +11,5 @@ ENV WEBHOOK=http://localhost:8080/api/smtp-hook
 ENV LISTEN_PORT=25
 ENV USER=admin
 ENV PASS=pass
-CMD ./smtp2http --listen=:${LISTEN_PORT} --webhook=${WEBHOOK} --user=${USER} --pass=${PASS}
+ENV DOMAIN=localhost.com
+CMD ./smtp2http --listen=:${LISTEN_PORT} --webhook=${WEBHOOK} --user=${USER} --pass=${PASS} --domain=${DOMAIN}

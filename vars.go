@@ -11,6 +11,7 @@ var (
 	flagWriteTimeout   = flag.Int("timeout.write", 5, "the write timeout in seconds")
 	flagAuthUSER       = flag.String("user", "user", "user for smtp client")
 	flagAuthPASS       = flag.String("pass", "pass", "pass for smtp client")
+	flagDomain         = flag.String("domain", "localhost.com", "domain for recieving mails")
 )
 
 func init() {
