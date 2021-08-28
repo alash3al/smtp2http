@@ -21,13 +21,6 @@ func main() {
 		ListenAddr:      *flagListenAddr,
 		MaxMessageBytes: int(*flagMaxMessageSize),
 		BannerDomain:    *flagServerName,
-		Auther: smtpsrv.AuthFunc(func(username, password string) error {
-			if username == *flagAuthUSER && password == *flagAuthPASS {
-				return nil
-			}
-			log.Println("Auth failed")
-			return errors.New("Nope!")
-		}),
 		Handler: smtpsrv.HandlerFunc(func(c *smtpsrv.Context) error {
 			msg, err := c.Parse()
 			if err != nil {
