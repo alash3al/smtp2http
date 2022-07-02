@@ -1,0 +1,10 @@
+language: go
+go:
+    - 1.7
+    - 1.8
+    - master
+install:
+    - go get github.com/miekg/dns
+script:
+    - go test -v
+    - go vet -x
