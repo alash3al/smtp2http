@@ -18,16 +18,16 @@ Dev
 
 Dev with Docker
 ==============
+Locally :
 - `go mod vendor`
 - `docker build -f Dockerfile.dev -t smtp2http-dev .`
-- `docker run -p 25:25 --timeout.read=50 --timeout.write=50 --webhook=http://some.hook/api smtp2http-dev`
+- `docker run -p 25:25 smtp2http-dev --timeout.read=50 --timeout.write=50 --webhook=http://some.hook/api`
 
-or build it as it comes from stouch repo :
-- `go mod vendor`
+Or build it as it comes from the repo :
 - `docker build -t smtp2http .`
-- `docker run -p 25:25 --env --timeout.read=50 --timeout.write=50 --webhook=http://some.hook/api smtp2http`
+- `docker run -p 25:25 smtp2http --timeout.read=50 --timeout.write=50 --webhook=http://some.hook/api`
 
-timeout options are of course optional but make it easier to test in local with `telnet localhost 25`
+The `timeout` options are of course optional but make it easier to test in local with `telnet localhost 25`
 Here is a telnet example payload : 
 ```
 HELO zeus
