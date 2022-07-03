@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alash3al/go-smtpsrv/v3"
+	"github.com/stouch/go-smtpsrv"
 	"github.com/go-resty/resty/v2"
 )
 
