@@ -48,9 +48,10 @@ func main() {
 			jsonData.Addresses.To = transformStdAddressToEmailAddress([]*mail.Address{c.To()})[0]
 
 			toSplited := strings.Split(jsonData.Addresses.To.Address, "@")
-			if len(toSplited) < 2 || toSplited[1] != *flagDomain {
+			if len(*flagDomain) > 0 && (len(toSplited) < 2 || toSplited[1] != *flagDomain) {
 				log.Println("domain not allowed")
-				return errors.New("Nope!")
+				log.Println(*flagDomain)
+				return errors.New("Unauthorized TO domain")
 			}
 
 			jsonData.Addresses.Cc = transformStdAddressToEmailAddress(msg.Cc)
