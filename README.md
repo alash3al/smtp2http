@@ -1,15 +1,6 @@
 SMTP2HTTP (email-to-web)
 ========================
-This repo is a fork from the v3.0.1 of @alash3al/smtp2http. 
-It's been initially created to fix accent characters encoding issue when receiving emails from Microsoft french outlook mailbox, which use a specific charset (Windows-1252).
-
 smtp2http is a simple smtp server that resends the incoming email to the configured web endpoint (webhook) as a basic http post request.
-
-Depedencies : 
-* github.com/go-resty/resty/v2 v2.3.0
-* github.com/miekg/dns v1.1.50
-* github.com/stouch/go-smtpsrv
-* golang.org/x/crypto
 
 Dev 
 ===
