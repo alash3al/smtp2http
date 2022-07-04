@@ -7,9 +7,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/mail"
+	"strings"
 	"time"
 
-	"github.com/alash3al/go-smtpsrv/v3"
+	"github.com/alash3al/go-smtpsrv"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -45,6 +46,13 @@ func main() {
 
 			jsonData.Addresses.From = transformStdAddressToEmailAddress([]*mail.Address{c.From()})[0]
 			jsonData.Addresses.To = transformStdAddressToEmailAddress([]*mail.Address{c.To()})[0]
+
+			toSplited := strings.Split(jsonData.Addresses.To.Address, "@")
+			if len(*flagDomain) > 0 && (len(toSplited) < 2 || toSplited[1] != *flagDomain) {
+				log.Println("domain not allowed")
+				log.Println(*flagDomain)
+				return errors.New("Unauthorized TO domain")
+			}
 
 			jsonData.Addresses.Cc = transformStdAddressToEmailAddress(msg.Cc)
 			jsonData.Addresses.Bcc = transformStdAddressToEmailAddress(msg.Bcc)
