@@ -12,6 +12,8 @@ github.com/stouch/go-smtpsrv v0.0.0-20220703125215-68226f8186a1 h1:o9Ip2tgXsP0gc
 github.com/stouch/go-smtpsrv v0.0.0-20220703125215-68226f8186a1/go.mod h1:cPbXKg/UsXLbAkTNG4b2jKQqAcoBZydx+THw0bNAyuo=
 github.com/stouch/go-smtpsrv v0.0.0-20220703140637-b92bd9f85931 h1:UK+GlCyqlSCBcuROnqJtVXINbCYtDiBaRoLIASQwf2w=
 github.com/stouch/go-smtpsrv v0.0.0-20220703140637-b92bd9f85931/go.mod h1:tafZzK8cRtARLk61MD5jtmnaDndSd+1S0dHahnKDjlw=
+github.com/stouch/go-smtpsrv v0.0.0-20220704002354-4c029abcc007 h1:FUn8te+r5uLF1HqWAs3LoXFGa9skrtl9MCMplHxib2Y=
+github.com/stouch/go-smtpsrv v0.0.0-20220704002354-4c029abcc007/go.mod h1:tafZzK8cRtARLk61MD5jtmnaDndSd+1S0dHahnKDjlw=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/zaccone/spf v0.0.0-20170817004109-76747b8658d9 h1:NugUf62Z6Yzn//u/MT+cuaFX1AFzfuIR9QVywUQX18E=
 github.com/zaccone/spf v0.0.0-20170817004109-76747b8658d9/go.mod h1:AL91TJsHKIaWR16S1IaxTSZfBRMr3/dOdiN1OZ1m9RM=
