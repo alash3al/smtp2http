@@ -62,8 +62,16 @@ webhook URL is reduced to `scheme://host` wherever it is logged -- for most
 providers the path or query *is* the credential.
 `--log.format=json` emits one JSON object per line.
 
-A rejected message fails the SMTP transaction, so a sending server retries
-rather than dropping the mail.
+How a rejection is answered depends on whose fault it is:
+
+| Cause | SMTP reply | Sender's behaviour |
+|---|---|---|
+| webhook unreachable, or answered anything but `200` | `451 4.3.0` | keeps the mail queued and retries |
+| recipient outside `--domain` | `550 5.7.1` | bounces |
+| message cannot be parsed | `554 5.6.0` | bounces |
+
+So a webhook outage or a deploy of the receiving application delays mail
+instead of losing it. Up to 1.1.1 all three were a permanent `554`.
 
 ## Docker
 

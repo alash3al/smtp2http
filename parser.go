@@ -85,7 +85,7 @@ func ParseEmail(r io.Reader) (email *Email, err error) {
 }
 
 func createEmailFromHeader(header mail.Header) (email *Email, err error) {
-	hp := headerParser{header: &header}
+	hp := headerParser{}
 
 	email = &Email{}
 	email.Subject = decodeMimeSentence(header.Get("Subject"))
@@ -106,11 +106,6 @@ func createEmailFromHeader(header mail.Header) (email *Email, err error) {
 	email.InReplyTo = hp.parseMessageIdList(header.Get("In-Reply-To"))
 	email.References = hp.parseMessageIdList(header.Get("References"))
 	email.ResentDate = hp.parseTime(header.Get("Resent-Date"))
-
-	if hp.err != nil {
-		err = hp.err
-		return
-	}
 
 	//decode whole header for easier access to extra fields
 	//todo: should we decode? aren't only standard fields mime encoded?
@@ -149,14 +144,24 @@ func parseMultipartRelated(msg io.Reader, boundary string) (textBody, htmlBody s
 
 		switch contentType {
 		case contentTypeTextPlain:
-			ppContent, err := io.ReadAll(part)
+			newPart, err := decodeContent(part, part.Header.Get("Content-Transfer-Encoding"), part.Header.Get("Content-Type"))
+			if err != nil {
+				return textBody, htmlBody, embeddedFiles, err
+			}
+
+			ppContent, err := io.ReadAll(newPart)
 			if err != nil {
 				return textBody, htmlBody, embeddedFiles, err
 			}
 
 			textBody += strings.TrimSuffix(string(ppContent[:]), "\n")
 		case contentTypeTextHtml:
-			ppContent, err := io.ReadAll(part)
+			newPart, err := decodeContent(part, part.Header.Get("Content-Transfer-Encoding"), part.Header.Get("Content-Type"))
+			if err != nil {
+				return textBody, htmlBody, embeddedFiles, err
+			}
+
+			ppContent, err := io.ReadAll(newPart)
 			if err != nil {
 				return textBody, htmlBody, embeddedFiles, err
 			}
@@ -180,7 +185,7 @@ func parseMultipartRelated(msg io.Reader, boundary string) (textBody, htmlBody s
 
 				embeddedFiles = append(embeddedFiles, ef)
 			} else {
-				return textBody, htmlBody, embeddedFiles, fmt.Errorf("Can't process multipart/related inner mime type: %s", contentType)
+				return textBody, htmlBody, embeddedFiles, fmt.Errorf("can't process multipart/related inner mime type: %s", contentType)
 			}
 		}
 	}
@@ -274,7 +279,7 @@ func parseMultipartAlternative(msg io.Reader, boundary string) (textBody, htmlBo
 
 				embeddedFiles = append(embeddedFiles, ef)
 			} else {
-				return textBody, htmlBody, embeddedFiles, fmt.Errorf("Can't process multipart/alternative inner mime type: %s", contentType)
+				return textBody, htmlBody, embeddedFiles, fmt.Errorf("can't process multipart/alternative inner mime type: %s", contentType)
 			}
 		}
 	}
@@ -339,7 +344,7 @@ func parseMultipartMixed(msg io.Reader, boundary string) (textBody, htmlBody str
 
 			attachments = append(attachments, at)
 		} else {
-			return textBody, htmlBody, attachments, embeddedFiles, fmt.Errorf("Unknown multipart/mixed nested mime type: %s", contentType)
+			return textBody, htmlBody, attachments, embeddedFiles, fmt.Errorf("unknown multipart/mixed nested mime type: %s", contentType)
 		}
 	}
 
@@ -420,8 +425,11 @@ func decodeAttachment(part *multipart.Part) (at Attachment, err error) {
 }
 
 func decodeContent(content io.Reader, encoding string, contentTypeWithCharset string) (io.Reader, error) {
-
-	switch encoding {
+	// RFC 2045 §6.1: the encoding name is case-insensitive. "8bit" and
+	// "binary" are identity encodings like "7bit"; the previous exact-match
+	// switch rejected the whole message for them, and for "Base64" or
+	// "Quoted-Printable" in any other case.
+	switch strings.ToLower(strings.TrimSpace(encoding)) {
 	case "base64":
 		decoded := base64.NewDecoder(base64.StdEncoding, content)
 		b, err := io.ReadAll(decoded)
@@ -430,14 +438,6 @@ func decodeContent(content io.Reader, encoding string, contentTypeWithCharset st
 		}
 
 		return decodeCharset(bytes.NewReader(b), contentTypeWithCharset), nil
-
-	case "7bit":
-		dd, err := io.ReadAll(content)
-		if err != nil {
-			return nil, err
-		}
-
-		return decodeCharset(bytes.NewReader(dd), contentTypeWithCharset), nil
 
 	case "quoted-printable":
 		decoded := quotedprintable.NewReader(content)
@@ -448,6 +448,14 @@ func decodeContent(content io.Reader, encoding string, contentTypeWithCharset st
 
 		return decodeCharset(bytes.NewReader(b), contentTypeWithCharset), nil
 
+	case "7bit", "8bit", "binary":
+		dd, err := io.ReadAll(content)
+		if err != nil {
+			return nil, err
+		}
+
+		return decodeCharset(bytes.NewReader(dd), contentTypeWithCharset), nil
+
 	case "":
 		return decodeCharset(content, contentTypeWithCharset), nil
 
@@ -456,40 +464,38 @@ func decodeContent(content io.Reader, encoding string, contentTypeWithCharset st
 	}
 }
 
-type headerParser struct {
-	header *mail.Header
-	err    error
-}
+// headerParser is deliberately lenient: a header that does not parse yields
+// its zero value and the message is still delivered. Mail from real clients
+// routinely carries a malformed address or an odd Date, and bouncing the
+// whole message over a header the webhook may not even read would be worse.
+//
+// The upstream version carried an err field meant to abort on the first bad
+// header, but assigned it through value receivers, so it was never seen.
+// Lenient is therefore what every release has done; this just says so.
+type headerParser struct{}
 
-func (hp headerParser) parseAddress(s string) (ma *mail.Address) {
-	if hp.err != nil {
+func (headerParser) parseAddress(s string) *mail.Address {
+	if strings.Trim(s, " \n") == "" {
 		return nil
 	}
 
-	if strings.Trim(s, " \n") != "" {
-		ma, hp.err = mail.ParseAddress(s)
+	ma, _ := mail.ParseAddress(s)
 
-		return ma
-	}
-
-	return nil
+	return ma
 }
 
-func (hp headerParser) parseAddressList(s string) (ma []*mail.Address) {
-	if hp.err != nil {
-		return
+func (headerParser) parseAddressList(s string) []*mail.Address {
+	if strings.Trim(s, " \n") == "" {
+		return nil
 	}
 
-	if strings.Trim(s, " \n") != "" {
-		ma, hp.err = mail.ParseAddressList(s)
-		return
-	}
+	ma, _ := mail.ParseAddressList(s)
 
-	return
+	return ma
 }
 
-func (hp headerParser) parseTime(s string) (t time.Time) {
-	if hp.err != nil || s == "" {
+func (headerParser) parseTime(s string) (t time.Time) {
+	if s == "" {
 		return
 	}
 
@@ -501,28 +507,19 @@ func (hp headerParser) parseTime(s string) (t time.Time) {
 	}
 
 	for _, format := range formats {
-		t, hp.err = time.Parse(format, s)
-		if hp.err == nil {
-			return
+		if parsed, err := time.Parse(format, s); err == nil {
+			return parsed
 		}
 	}
 
 	return
 }
 
-func (hp headerParser) parseMessageId(s string) string {
-	if hp.err != nil {
-		return ""
-	}
-
+func (headerParser) parseMessageId(s string) string {
 	return strings.Trim(s, "<> ")
 }
 
 func (hp headerParser) parseMessageIdList(s string) (result []string) {
-	if hp.err != nil {
-		return
-	}
-
 	for _, p := range strings.Split(s, " ") {
 		if strings.Trim(p, " \n") != "" {
 			result = append(result, hp.parseMessageId(p))

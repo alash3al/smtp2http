@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/base64"
-	"errors"
 	"flag"
 	"io"
 	"log/slog"
@@ -59,8 +58,30 @@ func domainFilter() string {
 	return *flagDomain
 }
 
-// deliver POSTs one message to the webhook. Any error fails the SMTP
-// transaction so the sender retries instead of the mail being lost.
+// SMTP replies. A handler error that is not an *smtp.SMTPError is answered
+// with a permanent 554 by go-smtp, which makes the sending server bounce the
+// mail at once. A webhook that is down or erroring is our problem, not the
+// sender's, so those are 451: the sender keeps the message queued and retries.
+var (
+	errDomainNotAllowed = &smtp.SMTPError{
+		Code:         550,
+		EnhancedCode: smtp.EnhancedCode{5, 7, 1},
+		Message:      "Unauthorized TO domain",
+	}
+	errWebhookUnreachable = &smtp.SMTPError{
+		Code:         451,
+		EnhancedCode: smtp.EnhancedCode{4, 3, 0},
+		Message:      "E1: Cannot accept your message due to internal error, please report that to our engineers",
+	}
+	errWebhookStatus = &smtp.SMTPError{
+		Code:         451,
+		EnhancedCode: smtp.EnhancedCode{4, 3, 0},
+		Message:      "E2: Cannot accept your message due to internal error, please report that to our engineers",
+	}
+)
+
+// deliver POSTs one message to the webhook. A webhook failure is a temporary
+// SMTP error, so the sender retries instead of the mail being lost.
 func deliver(env *envelope) error {
 	started := time.Now()
 
@@ -73,7 +94,7 @@ func deliver(env *envelope) error {
 
 	if !recipientAllowed(env.to.Address, *flagDomain) {
 		log.Warn("rejected", "reason", "to_domain_not_allowed", "domain_filter", domainFilter())
-		return errors.New("Unauthorized TO domain")
+		return errDomainNotAllowed
 	}
 
 	payload := buildPayload(env)
@@ -88,14 +109,14 @@ func deliver(env *envelope) error {
 		log.Error("rejected", "reason", "webhook_unreachable", "err", redactErr(err),
 			"duration_ms", time.Since(started).Milliseconds())
 
-		return errors.New("E1: Cannot accept your message due to internal error, please report that to our engineers")
+		return errWebhookUnreachable
 	}
 
 	if resp.StatusCode() != 200 {
 		log.Error("rejected", "reason", "webhook_status", "status", resp.StatusCode(),
 			"duration_ms", time.Since(started).Milliseconds())
 
-		return errors.New("E2: Cannot accept your message due to internal error, please report that to our engineers")
+		return errWebhookStatus
 	}
 
 	log.Info("accepted",
