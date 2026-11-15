@@ -28,12 +28,20 @@ func main() {
 			"this server does not authenticate senders. Restrict access with -domain and your firewall")
 	}
 
+	// Without a timeout a webhook that accepts the connection and then stalls
+	// holds the SMTP session, and the message it buffered, open forever.
+	webhookClient.SetTimeout(time.Duration(*flagWebhookTimeout) * time.Second)
+
 	srv := smtp.NewServer(&backend{handle: deliver})
 	srv.Addr = *flagListenAddr
 	srv.Domain = *flagServerName
 	srv.ReadTimeout = time.Duration(*flagReadTimeout) * time.Second
 	srv.WriteTimeout = time.Duration(*flagWriteTimeout) * time.Second
 	srv.MaxMessageBytes = *flagMaxMessageSize
+	// One webhook POST carries one recipient. Further RCPT TOs get a 452, which
+	// makes the sender deliver them in transactions of their own; accepting them
+	// here would answer 250 and then deliver only the last one.
+	srv.MaxRecipients = 1
 	srv.AllowInsecureAuth = true
 	srv.EnableSMTPUTF8 = false
 

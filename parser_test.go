@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/mail"
 	"os"
 	"path/filepath"
@@ -182,5 +184,36 @@ func TestParseToleratesBadHeaders(t *testing.T) {
 
 	if msg.Subject != "still here" || !msg.Date.IsZero() || len(msg.From) != 0 {
 		t.Errorf("subject %q date %v from %v", msg.Subject, msg.Date, msg.From)
+	}
+}
+
+// Mutually nested multipart/alternative and multipart/related must stop at
+// maxMultipartDepth instead of recursing for as long as the message lasts.
+func TestParseEmailRejectsDeepNesting(t *testing.T) {
+	nested := func(depth int) string {
+		var b strings.Builder
+
+		b.WriteString("From: a@b.c\r\nContent-Type: multipart/alternative; boundary=x0\r\n\r\n")
+
+		for i := 0; i < depth; i++ {
+			kind := "related"
+			if i%2 == 1 {
+				kind = "alternative"
+			}
+
+			fmt.Fprintf(&b, "--x%d\r\nContent-Type: multipart/%s; boundary=x%d\r\n\r\n", i, kind, i+1)
+		}
+
+		return b.String()
+	}
+
+	// The generated message is never terminated, so shallow nesting still ends
+	// in an EOF -- what matters is that it is not the depth error.
+	if _, err := ParseEmail(strings.NewReader(nested(3))); errors.Is(err, errMultipartTooDeep) {
+		t.Errorf("3 levels: %v", err)
+	}
+
+	if _, err := ParseEmail(strings.NewReader(nested(20000))); !errors.Is(err, errMultipartTooDeep) {
+		t.Errorf("20000 levels: err = %v, want errMultipartTooDeep", err)
 	}
 }

@@ -19,6 +19,7 @@ smtp2http --help
 | `--msglimit` | `2097152` (2 MiB) | maximum incoming message size |
 | `--timeout.read` | `5` | read timeout in seconds |
 | `--timeout.write` | `5` | write timeout in seconds |
+| `--timeout.webhook` | `30` | webhook request timeout in seconds |
 | `--log.level` | `info` | `debug`, `info`, `warn` or `error` |
 | `--log.format` | `text` | `text` or `json` |
 | `--user`, `--pass` | — | **deprecated, ignored.** See below. |

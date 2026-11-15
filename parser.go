@@ -32,6 +32,14 @@ const contentTypeMultipartRelated = "multipart/related"
 const contentTypeTextHtml = "text/html"
 const contentTypeTextPlain = "text/plain"
 
+// maxMultipartDepth bounds how deeply multipart/alternative and
+// multipart/related may nest inside each other. Real mail nests two or three
+// levels; without a bound a small message could nest thousands of levels, and
+// every level costs a buffered reader plus a pass over all the data below it.
+const maxMultipartDepth = 10
+
+var errMultipartTooDeep = fmt.Errorf("multipart nesting deeper than %d levels", maxMultipartDepth)
+
 // Parse an email message read from io.Reader into parsemail.Email struct
 func ParseEmail(r io.Reader) (email *Email, err error) {
 	msg, err := mail.ReadMessage(r)
@@ -54,9 +62,9 @@ func ParseEmail(r io.Reader) (email *Email, err error) {
 	case contentTypeMultipartMixed:
 		email.TextBody, email.HTMLBody, email.Attachments, email.EmbeddedFiles, err = parseMultipartMixed(msg.Body, params["boundary"])
 	case contentTypeMultipartAlternative:
-		email.TextBody, email.HTMLBody, email.EmbeddedFiles, err = parseMultipartAlternative(msg.Body, params["boundary"])
+		email.TextBody, email.HTMLBody, email.EmbeddedFiles, err = parseMultipartAlternative(msg.Body, params["boundary"], 1)
 	case contentTypeMultipartRelated:
-		email.TextBody, email.HTMLBody, email.EmbeddedFiles, err = parseMultipartRelated(msg.Body, params["boundary"])
+		email.TextBody, email.HTMLBody, email.EmbeddedFiles, err = parseMultipartRelated(msg.Body, params["boundary"], 1)
 	case contentTypeTextPlain:
 		newPart, err := decodeContent(msg.Body, msg.Header.Get("Content-Transfer-Encoding"), msg.Header.Get("Content-Type"))
 		if err != nil {
@@ -126,7 +134,11 @@ func parseContentType(contentTypeHeader string) (contentType string, params map[
 	return mime.ParseMediaType(contentTypeHeader)
 }
 
-func parseMultipartRelated(msg io.Reader, boundary string) (textBody, htmlBody string, embeddedFiles []EmbeddedFile, err error) {
+func parseMultipartRelated(msg io.Reader, boundary string, depth int) (textBody, htmlBody string, embeddedFiles []EmbeddedFile, err error) {
+	if depth > maxMultipartDepth {
+		return textBody, htmlBody, embeddedFiles, errMultipartTooDeep
+	}
+
 	pmr := multipart.NewReader(msg, boundary)
 	for {
 		part, err := pmr.NextPart()
@@ -168,7 +180,7 @@ func parseMultipartRelated(msg io.Reader, boundary string) (textBody, htmlBody s
 
 			htmlBody += strings.TrimSuffix(string(ppContent[:]), "\n")
 		case contentTypeMultipartAlternative:
-			tb, hb, ef, err := parseMultipartAlternative(part, params["boundary"])
+			tb, hb, ef, err := parseMultipartAlternative(part, params["boundary"], depth+1)
 			if err != nil {
 				return textBody, htmlBody, embeddedFiles, err
 			}
@@ -217,7 +229,11 @@ func decodeCharset(content io.Reader, contentTypeWithCharset string) io.Reader {
 	return enc.NewDecoder().Reader(content)
 }
 
-func parseMultipartAlternative(msg io.Reader, boundary string) (textBody, htmlBody string, embeddedFiles []EmbeddedFile, err error) {
+func parseMultipartAlternative(msg io.Reader, boundary string, depth int) (textBody, htmlBody string, embeddedFiles []EmbeddedFile, err error) {
+	if depth > maxMultipartDepth {
+		return textBody, htmlBody, embeddedFiles, errMultipartTooDeep
+	}
+
 	pmr := multipart.NewReader(msg, boundary)
 	for {
 		part, err := pmr.NextPart()
@@ -261,7 +277,7 @@ func parseMultipartAlternative(msg io.Reader, boundary string) (textBody, htmlBo
 			htmlBody += strings.TrimSuffix(string(ppContent[:]), "\n")
 
 		case contentTypeMultipartRelated:
-			tb, hb, ef, err := parseMultipartRelated(part, params["boundary"])
+			tb, hb, ef, err := parseMultipartRelated(part, params["boundary"], depth+1)
 			if err != nil {
 				return textBody, htmlBody, embeddedFiles, err
 			}
@@ -303,12 +319,12 @@ func parseMultipartMixed(msg io.Reader, boundary string) (textBody, htmlBody str
 		}
 
 		if contentType == contentTypeMultipartAlternative {
-			textBody, htmlBody, embeddedFiles, err = parseMultipartAlternative(part, params["boundary"])
+			textBody, htmlBody, embeddedFiles, err = parseMultipartAlternative(part, params["boundary"], 2)
 			if err != nil {
 				return textBody, htmlBody, attachments, embeddedFiles, err
 			}
 		} else if contentType == contentTypeMultipartRelated {
-			textBody, htmlBody, embeddedFiles, err = parseMultipartRelated(part, params["boundary"])
+			textBody, htmlBody, embeddedFiles, err = parseMultipartRelated(part, params["boundary"], 2)
 			if err != nil {
 				return textBody, htmlBody, attachments, embeddedFiles, err
 			}

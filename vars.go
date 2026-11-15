@@ -9,6 +9,7 @@ var (
 	flagMaxMessageSize = flag.Int64("msglimit", 1024*1024*2, "maximum incoming message size")
 	flagReadTimeout    = flag.Int("timeout.read", 5, "the read timeout in seconds")
 	flagWriteTimeout   = flag.Int("timeout.write", 5, "the write timeout in seconds")
+	flagWebhookTimeout = flag.Int("timeout.webhook", 30, "the webhook request timeout in seconds")
 	flagDomain         = flag.String("domain", "", "only accept mail addressed to this domain (default: any)")
 
 	flagLogLevel  = flag.String("log.level", "info", "log level: debug, info, warn or error")

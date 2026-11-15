@@ -33,6 +33,7 @@ func startServer(t *testing.T, hook http.HandlerFunc, domain string) string {
 
 	srv := gosmtp.NewServer(&backend{handle: deliver})
 	srv.Domain = "test"
+	srv.MaxRecipients = 1
 	srv.AllowInsecureAuth = true
 
 	go func() { _ = srv.Serve(ln) }()
@@ -152,5 +153,30 @@ func TestSMTPWebhookDownIsTemporary(t *testing.T) {
 
 	if tperr, ok := err.(*textproto.Error); !ok || tperr.Code != 451 {
 		t.Errorf("reply = %v, want 451", err)
+	}
+}
+
+// A second RCPT TO must be refused with a temporary error so the sender
+// delivers it separately. Accepting it would lose every recipient but the last.
+func TestSMTPSecondRecipientIsDeferred(t *testing.T) {
+	addr := startServer(t, func(http.ResponseWriter, *http.Request) {}, "")
+
+	c, err := smtp.Dial(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close() }()
+
+	if err := c.Mail("alice@sender.invalid"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := c.Rcpt("bob@example.com"); err != nil {
+		t.Fatal(err)
+	}
+
+	err = c.Rcpt("carol@example.com")
+	if tperr, ok := err.(*textproto.Error); !ok || tperr.Code != 452 {
+		t.Errorf("second RCPT = %v, want 452", err)
 	}
 }
