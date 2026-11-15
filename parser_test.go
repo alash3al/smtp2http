@@ -105,3 +105,82 @@ func FuzzParseEmail(f *testing.F) {
 		_, _ = ParseEmail(bytes.NewReader(raw))
 	})
 }
+
+// Messages 1.0.0 rejected outright or passed through undecoded, so there is no
+// golden payload to compare with: these assert the decoded bodies directly.
+func TestParseTransferEncodings(t *testing.T) {
+	cases := []struct {
+		name, raw, wantText, wantHTML string
+	}{
+		{
+			name: "8bit",
+			raw: "From: a@b.c\r\nContent-Type: text/plain; charset=utf-8\r\n" +
+				"Content-Transfer-Encoding: 8bit\r\n\r\nDobrý deň\r\n",
+			wantText: "Dobrý deň\r",
+		},
+		{
+			name: "binary",
+			raw: "From: a@b.c\r\nContent-Type: text/plain\r\n" +
+				"Content-Transfer-Encoding: binary\r\n\r\nhello\r\n",
+			wantText: "hello\r",
+		},
+		{
+			name: "encoding name in another case",
+			raw: "From: a@b.c\r\nContent-Type: text/plain\r\n" +
+				"Content-Transfer-Encoding: Base64\r\n\r\naGVsbG8=\r\n",
+			wantText: "hello",
+		},
+		{
+			name: "8bit part inside multipart/alternative",
+			raw: "From: a@b.c\r\nContent-Type: multipart/alternative; boundary=X\r\n\r\n" +
+				"--X\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\nDobrý deň\r\n" +
+				"--X\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: 8BIT\r\n\r\n<p>Dobrý deň</p>\r\n" +
+				"--X--\r\n",
+			wantText: "Dobrý deň",
+			wantHTML: "<p>Dobrý deň</p>",
+		},
+		{
+			name: "base64 html inside multipart/related",
+			raw: "From: a@b.c\r\nContent-Type: multipart/related; boundary=X\r\n\r\n" +
+				"--X\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" +
+				"PHA+RG9icsO9IGRlxYg8L3A+\r\n" +
+				"--X--\r\n",
+			wantHTML: "<p>Dobrý deň</p>",
+		},
+		{
+			name: "charset of an html part inside multipart/related",
+			raw: "From: a@b.c\r\nContent-Type: multipart/related; boundary=X\r\n\r\n" +
+				"--X\r\nContent-Type: text/html; charset=iso-8859-2\r\n\r\n<p>Dobr\xfd de\xf2</p>\r\n" +
+				"--X--\r\n",
+			wantHTML: "<p>Dobrý deň</p>",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			msg, err := ParseEmail(strings.NewReader(c.raw))
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+
+			if msg.TextBody != c.wantText || msg.HTMLBody != c.wantHTML {
+				t.Errorf("text %q html %q, want text %q html %q", msg.TextBody, msg.HTMLBody, c.wantText, c.wantHTML)
+			}
+		})
+	}
+}
+
+// A header that does not parse must not cost the sender their message.
+func TestParseToleratesBadHeaders(t *testing.T) {
+	raw := "From: not an address <<\r\nDate: yesterday\r\nSubject: still here\r\n" +
+		"Content-Type: text/plain\r\n\r\nhi\r\n"
+
+	msg, err := ParseEmail(strings.NewReader(raw))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	if msg.Subject != "still here" || !msg.Date.IsZero() || len(msg.From) != 0 {
+		t.Errorf("subject %q date %v from %v", msg.Subject, msg.Date, msg.From)
+	}
+}

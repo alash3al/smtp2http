@@ -59,7 +59,12 @@ func (s *session) Rcpt(to string, _ *smtp.RcptOptions) error {
 func (s *session) Data(r io.Reader) error {
 	msg, err := ParseEmail(r)
 	if err != nil {
-		return errors.New("Cannot read your message: " + err.Error())
+		// Permanent: the same bytes will not parse on a retry either.
+		return &smtp.SMTPError{
+			Code:         554,
+			EnhancedCode: smtp.EnhancedCode{5, 6, 0},
+			Message:      "Cannot read your message: " + err.Error(),
+		}
 	}
 
 	from, err := parseSMTPAddress(s.from)
